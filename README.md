@@ -13,7 +13,7 @@ Options:
     -t SOS,   --text=SOS            Text data to send default:[SOS]
     -r 44100, --sample-rate=44100   Sample rate default:[44100]
     -f 440,   --freq=440            Freq in Hertz default:[440]
-    -s 200,   --speed=200           Transmission speed in Milli-Seconds fr one [DOT] default:[200]
+    -s 200,   --speed=200           Transmission speed in Milli-Seconds for one [DOT] default:[200]
     -g 1,     --gain=1              Gain default:[1]
-    -l,       --loop                Loop default:[False]
+    -l,       --loop                For repeat forever!
 ```
