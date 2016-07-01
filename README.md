@@ -17,3 +17,12 @@ Options:
     -g 1,     --gain=1              Gain default:[1]
     -l,       --loop                For repeat forever!
 ```
+
+
+#### Example
+
+##### Sending S.O.S. With location LAT:[cord] LON:[cord]
+```
+./sendMorseCode -t "sos lat 3 42423 lon 43 4434" -g 4 -s 130 --loop
+
+```
