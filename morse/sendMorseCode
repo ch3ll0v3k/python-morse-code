@@ -1,0 +1,123 @@
+#!/usr/bin/python
+# ------------------------------------------------------------------------
+#from threading import Thread;
+import sys
+import time
+import alsaaudio
+import os
+
+from modules.ArgParser import ArgParser
+
+# ------------------------------------------------------------------------
+
+# ==================================================================================================
+class MorseCode(object):
+
+    # =================================================================
+    def __init__(self):
+
+        # -------------------------------------------------------------
+        self.VERSION                                = "1.0.3";
+        self.ARGV                                   = ArgParser( self.VERSION ); 
+
+        # -------------------------------------------------------------
+        self.LOOP                                   = self.ARGV.OPTS.loop;
+        self.UNIT_SPEED                             = self.ARGV.OPTS.speed; # MiliSeconds
+
+        self._text                                  = self.ARGV.OPTS.text;
+        self._rate                                  = self.ARGV.OPTS.rate;
+        self._freq                                  = self.ARGV.OPTS.freq;
+        self._dur                                   = [ self.UNIT_SPEED , self.UNIT_SPEED*4]; # DOT = 200 / SLASH = (4 x DOT)
+        self._gain                                  = self.ARGV.OPTS.gain;
+        self._delay                                 = float(self._dur[0])/1000.0; # = DOT
+        self._half_period                           = int(self._rate/self._freq/2);
+        self._beep                                  = (chr(0)+chr(self._gain))*self._half_period+(chr(0)*2)*self._half_period;
+        self._woord_tracker                         = "";
+
+        # -------------------------------------------------------------
+        self._PCM = alsaaudio.PCM( type=alsaaudio.PCM_PLAYBACK );
+        self._PCM.setchannels(1)
+        self._PCM.setrate( self._rate );
+        self._PCM.setformat( alsaaudio.PCM_FORMAT_S32_LE );
+        self._PCM.setperiodsize( 160 );
+
+        # -------------------------------------------------------------
+        self.ALPHA = {
+            "a" : [ 0,1 ],       "b" : [ 1,0,0,0 ],   "c" : [ 1,0,1,0 ],   "d" : [ 1,0,0 ],
+            "e" : [ 0 ],         "f" : [ 0,0,1,0 ],   "g" : [ 1,1,0 ],     "h" : [ 0,0,0,0 ],
+            "i" : [ 0,0 ],       "j" : [ 0,1,1,1 ],   "k" : [ 1,0,1 ],     "l" : [ 0,1,0,0 ],
+            "m" : [ 1,1 ],       "n" : [ 1,0 ],       "o" : [ 1,1,1 ],     "p" : [ 0,1,1,0 ],
+            "q" : [ 1,1,0,1 ],   "r" : [ 0,1,0 ],     "s" : [ 0,0,0 ],     "t" : [ 1 ],
+            "w" : [ 0,1,1 ],     "x" : [ 1,0,0,1 ],   "u" : [ 0,0,1 ],     "v" : [ 0,0,0,1 ],
+            "y" : [ 1,0,1,1 ],   "z" : [ 0,0,1,1 ],   "1" : [ 0,1,1,1,1 ], "2" : [ 0,0,1,1,1 ],
+            "3" : [ 0,0,0,1,1 ], "4" : [ 0,0,0,0,1 ], "5" : [ 0,0,0,0,0 ], "6" : [ 1,0,0,0,0 ],
+            "7" : [ 1,1,0,0,0 ], "8" : [ 1,1,1,0,0 ], "9" : [ 1,1,1,1,0 ], "0" : [ 1,1,1,1,1 ],
+            " " : [ 0,0,0,0,0 ]
+        }
+
+        # -------------------------------------------------------------
+        if self.LOOP:
+
+            while True:
+                self._woord_tracker = "";
+                self._gen_code();
+                time.sleep(self._delay*7); # space between woords is: seven (7) unit
+
+        else:
+            self._gen_code();
+            time.sleep(self._delay*7); # space between woords is: seven (7) unit
+        # -------------------------------------------------------------
+
+
+    # =================================================================
+    def _gen_code(self):
+
+        # -------------------------------------------------------------
+        for ltr in self._text:
+
+            if ltr in self.ALPHA:
+
+                self._woord_tracker += ltr;
+                
+                if ltr == " ":
+                    time.sleep(self._delay*7); # space between woords is: seven (7) unit
+                    continue;
+
+                for X in self.ALPHA[ltr]:
+                    sys.stdout.write( "SENDING: ["+self._woord_tracker+"]\r" );
+                    sys.stdout.flush();
+
+                    self._mkBeep( X );
+                    time.sleep(self._delay*1); # space between same letter is: one (1) unit
+
+
+            sys.stdout.write( ( " "*(len(self._woord_tracker)+24) )+"\r" );
+            sys.stdout.flush();
+            
+            time.sleep( self._delay*3 ); # space between letters is: one (3) unit
+        # -------------------------------------------------------------
+        print("SEND: ["+self._woord_tracker+"]");
+
+        # -------------------------------------------------------------
+
+    # =================================================================
+    def _mkBeep(self, _dur_index):
+        
+        # -------------------------------------------------------------
+        _beep = self._beep * int(self._dur[_dur_index]*self._rate/self._half_period/2000);
+
+        for idx in xrange(0, len(_beep), 320 ):
+            frm = _beep[idx:idx+320];
+            if len(frm) == 320:
+                self._PCM.write(frm) 
+
+
+        # -------------------------------------------------------------
+
+    # =================================================================
+
+# ###############################################################################################
+if __name__ == '__main__':
+
+    _MorseCode = MorseCode( );
+    
